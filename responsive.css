@@ -65,9 +65,23 @@
     .grid-motion__plane { width: 215%; gap: 10px; transform: translate(-50%, -50%) rotate(-5deg); }
     .grid-motion__row { gap: 10px; }
     .grid-motion__tile { flex-basis: 116px; width: 116px; height: 78px; font-size: 11px; border-width: 1px; }
-    .community-content { width: calc(100% - 56px); padding: 32px 20px; }
-    .community-content h2 { font-size: clamp(32px, 9.6vw, 44px); line-height: 0.98; }
-    .community-content > p:not(.section-label) { font-size: 15px; line-height: 1.6; }
+    .community-content {
+        width: min(300px, calc(100% - 88px));
+        padding: 26px 18px;
+        box-shadow: 6px 6px 0 rgba(143, 16, 24, 0.7);
+    }
+    .community-content .section-label { margin-bottom: 12px; font-size: 11px; }
+    .community-content h2 { margin-bottom: 14px; font-size: clamp(25px, 7.2vw, 32px); line-height: 0.98; }
+    .community-content > p:not(.section-label) { margin-bottom: 20px; font-size: 14px; line-height: 1.55; }
+
+    /* Slower motion on small screens */
+    .grid-motion__plane { animation-duration: 2800ms; }
+    .reveal-in { transition-duration: 1300ms; }
+    .hero-content,
+    .hero .buttons,
+    .hero .open-source-note { animation-duration: 1500ms; }
+    .hero .buttons { animation-delay: 260ms; }
+    .hero .open-source-note { animation-delay: 400ms; }
 }
 
 @media (max-width: 390px) {

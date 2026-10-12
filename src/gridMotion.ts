@@ -55,6 +55,8 @@ export function initGridMotion(root: HTMLElement): () => void {
   root.appendChild(plane)
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const compact = window.matchMedia("(max-width: 700px)").matches
+  const driftSpeed = compact ? 9 : 20
   const offsets = rows.map((_, index) => index * 73)
   let pointer = 0
   let pointerTarget = 0
@@ -81,7 +83,7 @@ export function initGridMotion(root: HTMLElement): () => void {
       if (!period) return
       const direction = index % 2 === 0 ? -1 : 1
       const currentOffset = offsets[index] ?? 0
-      const nextOffset = reduceMotion ? currentOffset : currentOffset + 20 * direction * delta
+      const nextOffset = reduceMotion ? currentOffset : currentOffset + driftSpeed * direction * delta
       offsets[index] = nextOffset
       const wrapped = ((nextOffset % period) + period) % period
       const base = direction < 0 ? -wrapped : wrapped - period

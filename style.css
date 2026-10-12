@@ -1967,12 +1967,13 @@ h2 {
     }
 
     .community-content {
-        padding: 34px 22px;
-        box-shadow: 7px 7px 0 rgba(143, 16, 24, 0.7);
+        width: min(300px, calc(100% - 88px));
+        padding: 26px 18px;
+        box-shadow: 6px 6px 0 rgba(143, 16, 24, 0.7);
     }
 
     .community-content h2 {
-        font-size: clamp(32px, 11vw, 46px);
+        font-size: clamp(25px, 7.2vw, 32px);
     }
 }
 
