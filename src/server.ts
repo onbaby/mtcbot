@@ -1,10 +1,9 @@
 import { createReadStream } from "node:fs"
 import { stat } from "node:fs/promises"
 import { createServer } from "node:http"
-import { dirname, extname, normalize, resolve, sep } from "node:path"
-import { fileURLToPath } from "node:url"
+import { extname, normalize, resolve, sep } from "node:path"
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+const root = process.cwd()
 const port = Number.parseInt(process.env.PORT ?? "3000", 10)
 
 const contentTypes: Record<string, string> = {
