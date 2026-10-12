@@ -1,10 +1,10 @@
 import { createReadStream } from "node:fs"
 import { stat } from "node:fs/promises"
 import { createServer } from "node:http"
-import { extname, normalize, resolve, sep } from "node:path"
+import { dirname, extname, normalize, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const root = resolve(fileURLToPath(new URL("../..", import.meta.url)))
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const port = Number.parseInt(process.env.PORT ?? "3000", 10)
 
 const contentTypes: Record<string, string> = {
@@ -18,7 +18,10 @@ const contentTypes: Record<string, string> = {
 const server = createServer(async (request, response) => {
   const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname)
   const requestedPath = pathname === "/" ? "index.html" : pathname.slice(1)
-  const filePath = resolve(root, normalize(requestedPath))
+  const builtAsset = requestedPath === "app.js" || requestedPath === "app.css"
+    ? `dist/${requestedPath}`
+    : requestedPath
+  const filePath = resolve(root, normalize(builtAsset))
 
   if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
     response.writeHead(403).end("Forbidden")
