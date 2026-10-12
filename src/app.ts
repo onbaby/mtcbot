@@ -25,6 +25,30 @@ if (wavesRoot) {
 const gridRoot = document.querySelector<HTMLElement>("#community-grid")
 if (gridRoot) initGridMotion(gridRoot)
 
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+const revealTargets = document.querySelectorAll<HTMLElement>(
+  ".section-header, .step, .checker-copy, .checker-card, .demo-header, .phone, .community-content"
+)
+
+if (reduceMotion || !("IntersectionObserver" in window)) {
+  revealTargets.forEach(element => element.classList.add("is-visible"))
+} else {
+  revealTargets.forEach((element, index) => {
+    element.classList.add("reveal-in")
+    element.style.setProperty("--reveal-delay", `${Math.min(index % 3, 2) * 90}ms`)
+  })
+
+  const revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return
+      entry.target.classList.add("is-visible")
+      revealObserver.unobserve(entry.target)
+    })
+  }, { threshold: 0.12, rootMargin: "0px 0px -8%" })
+
+  revealTargets.forEach(element => revealObserver.observe(element))
+}
+
 const navigation = document.querySelector<HTMLElement>("nav")
 if (navigation) {
   let previousScroll = window.scrollY
