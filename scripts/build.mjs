@@ -22,6 +22,7 @@ await build({
 await Promise.all([
   copyFile(resolve(projectRoot, "index.html"), resolve(outputDirectory, "index.html")),
   copyFile(resolve(projectRoot, "style.css"), resolve(outputDirectory, "style.css")),
+  copyFile(resolve(projectRoot, "responsive.css"), resolve(outputDirectory, "responsive.css")),
   cp(resolve(projectRoot, "assets"), resolve(outputDirectory, "assets"), { recursive: true })
 ])
 
