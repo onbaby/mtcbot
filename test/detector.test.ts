@@ -1,41 +1,60 @@
+import assert from "node:assert/strict"
+import { describe, it } from "node:test"
+
 import { analyzeMessage } from "../src/detector.js"
 
-//the test messages
-const testMessages = [
-  {
-    text: "I'm selling 3 Auburn, 3 Missouri and 3 Georgia Tech tickets, I can sell individually 224-231-7380",
-    expected: true
-  },
-  {
-    text: "Selling 2 Bama and 2 Oklahoma tickets, DM me if you're interested.",
-    expected: true
-  },
-  {
-    text: "Selling one Georgia ticket. DM me if interested.",
-    expected: false
-  },
-  {
-    text: "I'm selling my parking pass. Message me if you're interested.",
-    expected: false
-  },
-  {
-    text: "Join MTC now! Apply here: https://forms.gle/example",
-    expected: false
-  },
-  {
-    text: "Movie screening of Harar: The Forgotten Islamic City. Nov 2nd / 2-5PM. Tickets $10. Get your tickets online with Eventbrite at https://tinyurl.com/4faw4zpv. For more information contact Br Wahib at (678) 499-4469. Zelle info available upon request.",
-    expected: false
+describe("analyzeMessage", () => {
+  const cases = [
+    {
+      name: "flags a bulk ticket seller with a phone number",
+      text: "I'm selling 3 Auburn, 3 Missouri and 3 Georgia Tech tickets, I can sell individually 224-231-7380",
+      expected: true
+    },
+    {
+      name: "flags multiple ticket listings that request a DM",
+      text: "Selling 2 Bama and 2 Oklahoma tickets, DM me if you're interested.",
+      expected: true
+    },
+    {
+      name: "allows a single ticket listing",
+      text: "Selling one Georgia ticket. DM me if interested.",
+      expected: false
+    },
+    {
+      name: "allows a parking-pass listing",
+      text: "I'm selling my parking pass. Message me if you're interested.",
+      expected: false
+    },
+    {
+      name: "allows a club application link",
+      text: "Join MTC now! Apply here: https://forms.gle/example",
+      expected: false
+    },
+    {
+      name: "allows an event announcement with contact information",
+      text: "Movie screening of Harar: The Forgotten Islamic City. Nov 2nd / 2-5PM. Tickets $10. Get your tickets online with Eventbrite at https://tinyurl.com/4faw4zpv. For more information contact Br Wahib at (678) 499-4469. Zelle info available upon request.",
+      expected: false
+    }
+  ]
+
+  for (const testCase of cases) {
+    it(testCase.name, () => {
+      const result = analyzeMessage(testCase.text)
+      assert.equal(result.suspicious, testCase.expected)
+    })
   }
-]
 
-//the loop to actually run the tests
-for (const test of testMessages) {
-  const result = analyzeMessage(test.text)
+  it("reports the signals that contributed to the score", () => {
+    const result = analyzeMessage(
+      "Selling 2 Bama and 2 Oklahoma tickets, DM me if you're interested."
+    )
 
-  console.log({
-    expected: test.expected,
-    actual: result.suspicious,
-    score: result.score,
-    reasons: result.reasons
+    assert.equal(result.score, 7)
+    assert.deepEqual(result.reasons, [
+      "mentions selling tickets",
+      "asks for private contact",
+      "mentions multiple games",
+      "lists quantities for multiple games"
+    ])
   })
-}
+})

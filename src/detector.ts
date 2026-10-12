@@ -2,7 +2,13 @@
 /*The functions has a rating threshold of 6 and 
 if the message has elements that are equal or greater than 6, it's suspicious*/
 
-export function analyzeMessage(message: string) {
+export interface AnalysisResult {
+  score: number
+  suspicious: boolean
+  reasons: string[]
+}
+
+export function analyzeMessage(message: string): AnalysisResult {
   let score = 0
   const reasons: string[] = []
   const text = message.toLowerCase()
@@ -67,8 +73,8 @@ export function analyzeMessage(message: string) {
   }
 
   return {
-    score: score,
+    score,
     suspicious: score >= 6,
-    reasons: reasons
+    reasons
   }
 }

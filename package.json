@@ -1,10 +1,14 @@
 {
   "name": "mtcbot-main",
   "version": "1.0.0",
-  "description": "hello",
-  "main": "index.js",
+  "description": "A lightweight GroupMe ticket-scam detector and product demo.",
+  "main": "dist/src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc && esbuild src/app.ts --bundle --format=esm --target=es2022 --outfile=dist/app.js",
+    "check": "tsc --noEmit",
+    "dev": "tsx watch src/server.ts",
+    "start": "npm run build && node dist/src/server.js",
+    "test": "tsx --test test/**/*.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -12,7 +16,15 @@
   "type": "module",
   "devDependencies": {
     "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "ogl": "^1.0.11",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }
