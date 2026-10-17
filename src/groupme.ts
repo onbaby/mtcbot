@@ -124,18 +124,22 @@ export const deleteGroupMessage = async (
   messageId: string,
   fetcher: Fetcher = fetch
 ): Promise<DeleteMessageResult> => {
-  const response = await fetcher(
-    `${GROUPME_API}/conversations/${encodeURIComponent(groupId)}/messages/${encodeURIComponent(messageId)}`,
-    {
-      method: "DELETE",
-      headers: {
-        Accept: "application/json",
-        "X-Access-Token": accessToken
+  try {
+    const response = await fetcher(
+      `${GROUPME_API}/conversations/${encodeURIComponent(groupId)}/messages/${encodeURIComponent(messageId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          "X-Access-Token": accessToken
+        }
       }
-    }
-  )
+    )
 
-  return { deleted: response.ok, status: response.status }
+    return { deleted: response.ok, status: response.status }
+  } catch {
+    return { deleted: false, status: 0 }
+  }
 }
 
 const encryptionKey = (secret: string): Buffer => createHash("sha256").update(secret).digest()

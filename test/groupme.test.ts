@@ -66,4 +66,7 @@ test("GroupMe helpers send the expected API requests", async () => {
 test("message deletion fails closed so the callback can warn instead", async () => {
   const fetcher: typeof fetch = async () => new Response(null, { status: 403 })
   assert.deepEqual(await deleteGroupMessage("token", "1", "m1", fetcher), { deleted: false, status: 403 })
+
+  const unavailableFetcher: typeof fetch = async () => { throw new Error("network unavailable") }
+  assert.deepEqual(await deleteGroupMessage("token", "1", "m1", unavailableFetcher), { deleted: false, status: 0 })
 })
