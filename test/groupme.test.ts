@@ -6,9 +6,12 @@ import {
   createBot,
   deleteGroupMessage,
   formatWarning,
+  getCurrentUser,
   listGroups,
   openInstallation,
+  openGroupMeSession,
   postBotMessage,
+  sealGroupMeSession,
   sealInstallation
 } from "../src/groupme.js"
 
@@ -20,6 +23,14 @@ test("installation tokens round-trip and reject tampering", () => {
   const parts = token.split(".")
   parts[1] = `${parts[1]?.startsWith("A") ? "B" : "A"}${parts[1]?.slice(1)}`
   assert.throws(() => openInstallation(parts.join("."), secret))
+})
+
+test("OAuth sessions are encrypted and expire after 24 hours", () => {
+  const token = sealGroupMeSession({ accessToken: "abc", issuedAt: Date.now(), userId: "u1" }, secret)
+  assert.equal(openGroupMeSession(token, secret).accessToken, "abc")
+
+  const expired = sealGroupMeSession({ accessToken: "abc", issuedAt: Date.now() - 25 * 60 * 60_000, userId: "u1" }, secret)
+  assert.throws(() => openGroupMeSession(expired, secret), /expired/)
 })
 
 test("callback analysis ignores bot and system messages", () => {
@@ -42,6 +53,9 @@ test("GroupMe helpers send the expected API requests", async () => {
     if (url.includes("/groups?")) {
       return new Response(JSON.stringify({ response: [{ id: "1", name: "MSA" }] }), { status: 200 })
     }
+    if (url.endsWith("/users/me")) {
+      return new Response(JSON.stringify({ response: { id: "u1", name: "Sadiq" } }), { status: 200 })
+    }
     if (url.includes("/conversations/") && init?.method === "DELETE") {
       return new Response(null, { status: 204 })
     }
@@ -52,15 +66,17 @@ test("GroupMe helpers send the expected API requests", async () => {
   }
 
   assert.deepEqual(await listGroups("token", fetcher), [{ id: "1", name: "MSA" }])
+  assert.equal((await getCurrentUser("token", fetcher)).name, "Sadiq")
   assert.equal((await createBot("token", "1", "https://example.com/callback", fetcher)).bot_id, "b1")
   assert.deepEqual(await deleteGroupMessage("token", "1", "m1", fetcher), { deleted: true, status: 204 })
   await postBotMessage("b1", "warning", fetcher)
 
   assert.equal(new Headers(requests[0]?.init?.headers).get("X-Access-Token"), "token")
-  assert.match(String(requests[1]?.init?.body), /callback_url/)
-  assert.equal(requests[2]?.init?.method, "DELETE")
-  assert.equal(new Headers(requests[2]?.init?.headers).get("X-Access-Token"), "token")
-  assert.match(String(requests[3]?.init?.body), /warning/)
+  assert.equal(new Headers(requests[1]?.init?.headers).get("X-Access-Token"), "token")
+  assert.match(String(requests[2]?.init?.body), /callback_url/)
+  assert.equal(requests[3]?.init?.method, "DELETE")
+  assert.equal(new Headers(requests[3]?.init?.headers).get("X-Access-Token"), "token")
+  assert.match(String(requests[4]?.init?.body), /warning/)
 })
 
 test("message deletion fails closed so the callback can warn instead", async () => {

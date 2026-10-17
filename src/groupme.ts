@@ -16,6 +16,12 @@ export interface GroupMeBot {
   name: string
 }
 
+export interface GroupMeUser {
+  id: string
+  name: string
+  avatar_url?: string | null
+}
+
 export interface GroupMeCallback {
   group_id?: string
   id?: string
@@ -29,6 +35,12 @@ interface InstallationPayload {
   accessToken: string
   groupId: string
   installedAt: number
+}
+
+interface GroupMeSessionPayload {
+  accessToken: string
+  issuedAt: number
+  userId: string
 }
 
 type Fetcher = typeof fetch
@@ -73,6 +85,10 @@ export const listGroups = async (accessToken: string, fetcher: Fetcher = fetch):
     fetcher
   )
   return groups.map(group => ({ id: String(group.id), name: group.name }))
+}
+
+export const getCurrentUser = async (accessToken: string, fetcher: Fetcher = fetch): Promise<GroupMeUser> => {
+  return groupMeRequest<GroupMeUser>("/users/me", { method: "GET" }, accessToken, fetcher)
 }
 
 export const createBot = async (
@@ -163,6 +179,28 @@ export const openInstallation = (token: string, secret: string): InstallationPay
     decipher.final()
   ]).toString("utf8")
   return JSON.parse(decrypted) as InstallationPayload
+}
+
+export const sealGroupMeSession = (payload: GroupMeSessionPayload, secret: string): string => {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv("aes-256-gcm", encryptionKey(secret), iv)
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), "utf8"), cipher.final()])
+  return [iv, encrypted, cipher.getAuthTag()].map(part => part.toString("base64url")).join(".")
+}
+
+export const openGroupMeSession = (token: string, secret: string): GroupMeSessionPayload => {
+  const [ivPart, encryptedPart, tagPart] = token.split(".")
+  if (!ivPart || !encryptedPart || !tagPart) throw new Error("Invalid GroupMe session")
+
+  const decipher = createDecipheriv("aes-256-gcm", encryptionKey(secret), Buffer.from(ivPart, "base64url"))
+  decipher.setAuthTag(Buffer.from(tagPart, "base64url"))
+  const payload = JSON.parse(Buffer.concat([
+    decipher.update(Buffer.from(encryptedPart, "base64url")),
+    decipher.final()
+  ]).toString("utf8")) as GroupMeSessionPayload
+
+  if (Date.now() - payload.issuedAt > 24 * 60 * 60_000) throw new Error("GroupMe session expired")
+  return payload
 }
 
 export const analyzeCallback = (message: GroupMeCallback): AnalysisResult | null => {

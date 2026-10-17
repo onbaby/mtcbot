@@ -95,22 +95,29 @@
         <h2>Add MTC Bot to your GroupMe.</h2>
         <p>Connect your GroupMe account, choose a group you manage, and MTC Bot will begin checking new messages.</p>
         <ol class="install-steps">
-            <li><span>01</span> Get your GroupMe access token.</li>
-            <li><span>02</span> Load and choose your group.</li>
+            <li><span>01</span> Sign in securely with GroupMe.</li>
+            <li><span>02</span> Choose one of your groups.</li>
             <li><span>03</span> Install the bot with one click.</li>
         </ol>
         <p class="api-limit"><strong>Experimental removal:</strong> MTC Bot attempts GroupMe's undocumented deletion route when permissions allow. If GroupMe rejects it, the bot posts a warning so an admin can remove the message.</p>
     </div>
 
     <form id="groupme-installer" class="install-card" novalidate>
-        <label for="groupme-token">GroupMe access token</label>
-        <input id="groupme-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your token" required>
-        <p class="field-help">Create or copy your token at <a href="https://dev.groupme.com/" target="_blank" rel="noreferrer">dev.groupme.com ↗</a>. It is used only to connect the bot and is never saved in your browser.</p>
-        <button id="load-groups" type="button" class="button secondary">Load my groups</button>
+        <p class="login-eyebrow">STEP 1 — CONNECT YOUR ACCOUNT</p>
+        <a id="groupme-login" class="button primary groupme-login" href="/api/groupme/login">Continue with GroupMe</a>
+        <p class="field-help">You will sign in on GroupMe and return here automatically. MTC Bot never sees your password.</p>
+
+        <div id="groupme-profile" class="groupme-profile" hidden>
+            <div>
+                <span>CONNECTED AS</span>
+                <strong id="groupme-user-name">GroupMe user</strong>
+            </div>
+            <button id="groupme-logout" type="button">Log out</button>
+        </div>
 
         <label for="group-select">Group to protect</label>
         <select id="group-select" disabled required>
-            <option value="">Load your groups first</option>
+            <option value="">Sign in to load your groups</option>
         </select>
         <button id="install-bot" type="submit" class="button primary" disabled>Add MTC Bot</button>
         <div id="install-status" class="install-status" role="status" aria-live="polite">Ready when you are.</div>

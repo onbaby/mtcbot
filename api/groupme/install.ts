@@ -1,8 +1,11 @@
 import { createBot, listGroups, sealInstallation } from "../../src/groupme.js"
+import { requireGroupMeSession } from "../_lib/auth.js"
 import { json, publicBaseUrl, readJson, requirePost, type ApiRequest, type ApiResponse } from "../_lib/http.js"
 
 export default async function handler(request: ApiRequest, response: ApiResponse): Promise<void> {
   if (!requirePost(request, response)) return
+  const session = requireGroupMeSession(request, response)
+  if (!session) return
 
   const secret = process.env.INSTALLATION_SECRET
   if (!secret || secret.length < 32) {
@@ -10,10 +13,10 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   }
 
   try {
-    const body = await readJson<{ accessToken?: string; groupId?: string }>(request)
-    const accessToken = body.accessToken?.trim()
+    const body = await readJson<{ groupId?: string }>(request)
+    const accessToken = session.accessToken
     const groupId = body.groupId?.trim()
-    if (!accessToken || !groupId) return json(response, 400, { error: "Access token and group are required" })
+    if (!groupId) return json(response, 400, { error: "A group is required" })
 
     const groups = await listGroups(accessToken)
     const group = groups.find(candidate => candidate.id === groupId)

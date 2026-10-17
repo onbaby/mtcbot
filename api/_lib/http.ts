@@ -32,7 +32,7 @@ export const requirePost = (request: ApiRequest, response: ApiResponse): boolean
     response.setHeader("Vary", "Origin")
   }
   if (request.method === "OPTIONS") {
-    response.setHeader("Access-Control-Allow-Headers", "Content-Type")
+    response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type")
     response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
     response.writeHead(204).end()
     return false

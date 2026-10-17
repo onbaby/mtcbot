@@ -194,8 +194,10 @@ form.addEventListener("submit", (event) => {
 updateCount()
 
 const installer = document.querySelector<HTMLFormElement>("#groupme-installer")
-const tokenInput = document.querySelector<HTMLInputElement>("#groupme-token")
-const loadGroupsButton = document.querySelector<HTMLButtonElement>("#load-groups")
+const loginLink = document.querySelector<HTMLAnchorElement>("#groupme-login")
+const profilePanel = document.querySelector<HTMLElement>("#groupme-profile")
+const userName = document.querySelector<HTMLElement>("#groupme-user-name")
+const logoutButton = document.querySelector<HTMLButtonElement>("#groupme-logout")
 const groupSelect = document.querySelector<HTMLSelectElement>("#group-select")
 const installButton = document.querySelector<HTMLButtonElement>("#install-bot")
 const installStatus = document.querySelector<HTMLElement>("#install-status")
@@ -203,11 +205,37 @@ const installStatus = document.querySelector<HTMLElement>("#install-status")
 const groupMeApiBase = window.location.hostname === "mtcbot.vercel.app"
   ? "https://mtc-iota-opal.vercel.app"
   : ""
+const sessionStorageKey = "mtc-groupme-session"
+
+const readOAuthReturn = (): { session?: string; error?: string } => {
+  const parts = window.location.hash.slice(1).split("&")
+  const parameters = new URLSearchParams(parts.slice(1).join("&"))
+  const session = parameters.get("session") ?? undefined
+  const error = parameters.get("error") ?? undefined
+  if (session || error) history.replaceState(null, "", "#install")
+  return { ...(session ? { session } : {}), ...(error ? { error } : {}) }
+}
+
+const getSession = (): string => {
+  try { return sessionStorage.getItem(sessionStorageKey) ?? "" } catch { return "" }
+}
+
+const saveSession = (session: string): void => {
+  try { sessionStorage.setItem(sessionStorageKey, session) } catch { /* Browser storage may be unavailable. */ }
+}
+
+const clearSession = (): void => {
+  try { sessionStorage.removeItem(sessionStorageKey) } catch { /* Browser storage may be unavailable. */ }
+}
 
 const requestJson = async <T>(path: string, body: object): Promise<T> => {
+  const session = getSession()
   const response = await fetch(`${groupMeApiBase}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(session ? { Authorization: `Bearer ${session}` } : {})
+    },
     body: JSON.stringify(body)
   })
   const payload = await response.json() as T & { error?: string }
@@ -215,26 +243,27 @@ const requestJson = async <T>(path: string, body: object): Promise<T> => {
   return payload
 }
 
-if (installer && tokenInput && loadGroupsButton && groupSelect && installButton && installStatus) {
+if (installer && loginLink && profilePanel && userName && logoutButton && groupSelect && installButton && installStatus) {
+  loginLink.href = `${groupMeApiBase}/api/groupme/login`
+
   const setInstallerStatus = (message: string, state = "") => {
     installStatus.textContent = message
     installStatus.className = `install-status${state ? ` is-${state}` : ""}`
   }
 
-  loadGroupsButton.addEventListener("click", async () => {
-    const accessToken = tokenInput.value.trim()
-    if (!accessToken) {
-      setInstallerStatus("Paste your GroupMe access token first.", "error")
-      tokenInput.focus()
-      return
-    }
+  const resetInstaller = () => {
+    profilePanel.hidden = true
+    loginLink.hidden = false
+    groupSelect.disabled = true
+    groupSelect.replaceChildren(new Option("Sign in to load your groups", ""))
+    installButton.disabled = true
+    installButton.textContent = "Add MTC Bot"
+  }
 
-    loadGroupsButton.disabled = true
-    loadGroupsButton.textContent = "Loading…"
-    setInstallerStatus("Connecting to GroupMe…")
-
+  const loadGroups = async () => {
+    setInstallerStatus("Loading your GroupMe groups…")
     try {
-      const payload = await requestJson<{ groups: Array<{ id: string; name: string }> }>("/api/groupme/groups", { accessToken })
+      const payload = await requestJson<{ groups: Array<{ id: string; name: string }> }>("/api/groupme/groups", {})
       groupSelect.replaceChildren(new Option("Choose a group", ""))
       payload.groups.forEach(group => groupSelect.add(new Option(group.name, group.id)))
       groupSelect.disabled = false
@@ -242,10 +271,38 @@ if (installer && tokenInput && loadGroupsButton && groupSelect && installButton 
       setInstallerStatus(payload.groups.length ? "Choose the group you want to protect." : "No groups were found for this account.", payload.groups.length ? "ready" : "error")
     } catch (error) {
       setInstallerStatus(error instanceof Error ? error.message : "Could not load your groups.", "error")
-    } finally {
-      loadGroupsButton.disabled = false
-      loadGroupsButton.textContent = "Load my groups"
     }
+  }
+
+  const restoreSession = async () => {
+    const oauthReturn = readOAuthReturn()
+    if (oauthReturn.session) saveSession(oauthReturn.session)
+    if (oauthReturn.error) {
+      clearSession()
+      resetInstaller()
+      setInstallerStatus(oauthReturn.error, "error")
+      return
+    }
+    if (!getSession()) return
+
+    setInstallerStatus("Confirming your GroupMe login…")
+    try {
+      const payload = await requestJson<{ user: { name: string } }>("/api/groupme/me", {})
+      userName.textContent = payload.user.name
+      profilePanel.hidden = false
+      loginLink.hidden = true
+      await loadGroups()
+    } catch (error) {
+      clearSession()
+      resetInstaller()
+      setInstallerStatus(error instanceof Error ? error.message : "Please sign in again.", "error")
+    }
+  }
+
+  logoutButton.addEventListener("click", () => {
+    clearSession()
+    resetInstaller()
+    setInstallerStatus("Signed out. Connect GroupMe when you are ready.")
   })
 
   groupSelect.addEventListener("change", () => {
@@ -254,17 +311,15 @@ if (installer && tokenInput && loadGroupsButton && groupSelect && installButton 
 
   installer.addEventListener("submit", async event => {
     event.preventDefault()
-    const accessToken = tokenInput.value.trim()
     const groupId = groupSelect.value
-    if (!accessToken || !groupId) return
+    if (!getSession() || !groupId) return
 
     installButton.disabled = true
     installButton.textContent = "Installing…"
     setInstallerStatus("Creating MTC Bot in your group…")
 
     try {
-      const payload = await requestJson<{ group: { name: string } }>("/api/groupme/install", { accessToken, groupId })
-      tokenInput.value = ""
+      const payload = await requestJson<{ group: { name: string } }>("/api/groupme/install", { groupId })
       groupSelect.disabled = true
       setInstallerStatus(`MTC Bot is active in ${payload.group.name}. Send a test message to try it.`, "success")
       installButton.textContent = "Bot installed"
@@ -274,4 +329,6 @@ if (installer && tokenInput && loadGroupsButton && groupSelect && installButton 
       setInstallerStatus(error instanceof Error ? error.message : "Could not install the bot.", "error")
     }
   })
+
+  void restoreSession()
 }

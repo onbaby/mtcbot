@@ -7,6 +7,9 @@ import { loadEnvFile } from "node:process"
 import callbackHandler from "../api/groupme/callback.js"
 import groupsHandler from "../api/groupme/groups.js"
 import installHandler from "../api/groupme/install.js"
+import loginHandler from "../api/groupme/login.js"
+import meHandler from "../api/groupme/me.js"
+import oauthHandler from "../api/groupme/oauth.js"
 
 try {
   loadEnvFile()
@@ -31,7 +34,10 @@ const server = createServer(async (request, response) => {
   const apiHandler = {
     "/api/groupme/callback": callbackHandler,
     "/api/groupme/groups": groupsHandler,
-    "/api/groupme/install": installHandler
+    "/api/groupme/install": installHandler,
+    "/api/groupme/login": loginHandler,
+    "/api/groupme/me": meHandler,
+    "/api/groupme/oauth": oauthHandler
   }[pathname]
   if (apiHandler) {
     await apiHandler(request, response)
