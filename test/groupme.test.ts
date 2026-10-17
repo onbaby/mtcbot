@@ -16,7 +16,9 @@ const secret = "test-secret-that-is-at-least-thirty-two-characters"
 test("installation tokens round-trip and reject tampering", () => {
   const token = sealInstallation({ accessToken: "abc", groupId: "123", installedAt: 42 }, secret)
   assert.deepEqual(openInstallation(token, secret), { accessToken: "abc", groupId: "123", installedAt: 42 })
-  assert.throws(() => openInstallation(`${token.slice(0, -1)}x`, secret))
+  const parts = token.split(".")
+  parts[1] = `${parts[1]?.startsWith("A") ? "B" : "A"}${parts[1]?.slice(1)}`
+  assert.throws(() => openInstallation(parts.join("."), secret))
 })
 
 test("callback analysis ignores bot and system messages", () => {

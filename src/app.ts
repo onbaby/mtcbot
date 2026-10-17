@@ -200,8 +200,12 @@ const groupSelect = document.querySelector<HTMLSelectElement>("#group-select")
 const installButton = document.querySelector<HTMLButtonElement>("#install-bot")
 const installStatus = document.querySelector<HTMLElement>("#install-status")
 
+const groupMeApiBase = window.location.hostname === "mtcbot.vercel.app"
+  ? "https://mtc-iota-opal.vercel.app"
+  : ""
+
 const requestJson = async <T>(path: string, body: object): Promise<T> => {
-  const response = await fetch(path, {
+  const response = await fetch(`${groupMeApiBase}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)

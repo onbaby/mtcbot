@@ -26,8 +26,19 @@ export const readJson = async <T>(request: ApiRequest): Promise<T> => {
 }
 
 export const requirePost = (request: ApiRequest, response: ApiResponse): boolean => {
+  const origin = request.headers.origin
+  if (origin === "https://mtcbot.vercel.app") {
+    response.setHeader("Access-Control-Allow-Origin", origin)
+    response.setHeader("Vary", "Origin")
+  }
+  if (request.method === "OPTIONS") {
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type")
+    response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+    response.writeHead(204).end()
+    return false
+  }
   if (request.method === "POST") return true
-  response.setHeader("Allow", "POST")
+  response.setHeader("Allow", "POST, OPTIONS")
   json(response, 405, { error: "Method not allowed" })
   return false
 }
