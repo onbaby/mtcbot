@@ -27,7 +27,7 @@ if (gridRoot) initGridMotion(gridRoot)
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 const revealTargets = document.querySelectorAll<HTMLElement>(
-  ".section-header, .step, .checker-copy, .checker-card, .demo-header, .phone, .community-content"
+  ".section-header, .install-card, .step, .checker-copy, .checker-card, .demo-header, .phone, .community-content"
 )
 
 if (reduceMotion || !("IntersectionObserver" in window)) {
@@ -79,10 +79,47 @@ if (navigation) {
 const form = document.querySelector<HTMLFormElement>("#message-checker")
 const messageInput = document.querySelector<HTMLTextAreaElement>("#message-input")
 const resultPanel = document.querySelector<HTMLElement>("#analysis-result")
+const messageCount = document.querySelector<HTMLElement>("#message-count")
+const exampleButtons = document.querySelectorAll<HTMLButtonElement>("[data-example]")
 
-if (!form || !messageInput || !resultPanel) {
+if (!form || !messageInput || !resultPanel || !messageCount) {
   throw new Error("Message checker markup is missing")
 }
+
+const examples = {
+  scam: "Selling 2 Bama and 2 Oklahoma tickets, DM me if you're interested.",
+  safe: "Reminder: our MSA meeting starts at 7 tonight in the student center."
+} as const
+
+const resetResult = () => {
+  resultPanel.className = "analysis-result is-empty"
+  resultPanel.textContent = "Your result will appear here."
+}
+
+const updateCount = () => {
+  messageCount.textContent = `${messageInput.value.length} / ${messageInput.maxLength}`
+}
+
+messageInput.addEventListener("input", updateCount)
+
+exampleButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    const example = button.dataset.example as keyof typeof examples | undefined
+    if (!example) return
+    messageInput.value = examples[example]
+    updateCount()
+    resetResult()
+    messageInput.focus()
+  })
+})
+
+form.addEventListener("reset", () => {
+  requestAnimationFrame(() => {
+    updateCount()
+    resetResult()
+    messageInput.focus()
+  })
+})
 
 form.addEventListener("submit", (event) => {
   event.preventDefault()
@@ -98,15 +135,139 @@ form.addEventListener("submit", (event) => {
   const result = analyzeMessage(message)
   resultPanel.className = `analysis-result ${result.suspicious ? "is-spam" : "is-safe"}`
 
+  const summary = document.createElement("div")
+  summary.className = "result-summary"
+
   const heading = document.createElement("strong")
   heading.textContent = result.suspicious
-    ? `Likely spam · score ${result.score}/6+`
-    : `No high-risk pattern · score ${result.score}/6`
+    ? "Likely spam or scam"
+    : "No high-risk pattern found"
+
+  const score = document.createElement("span")
+  score.className = "result-score"
+  score.textContent = `${result.score} risk point${result.score === 1 ? "" : "s"}`
+  summary.append(heading, score)
+
+  const meter = document.createElement("div")
+  meter.className = "risk-meter"
+  meter.setAttribute("aria-label", `Risk score ${result.score}; messages are flagged at 6 points`)
+
+  const meterFill = document.createElement("span")
+  meterFill.style.width = `${Math.min(100, (result.score / 6) * 100)}%`
+  meter.appendChild(meterFill)
 
   const details = document.createElement("p")
-  details.textContent = result.reasons.length
-    ? result.reasons.join(" · ")
-    : "No suspicious ticket-selling signals were found."
+  details.textContent = result.suspicious
+    ? "Treat this message cautiously and verify the sender before anyone responds or pays."
+    : "This message does not match the detector's high-risk ticket-selling pattern."
 
-  resultPanel.replaceChildren(heading, details)
+  const reasons = document.createElement("ul")
+  reasons.className = "result-reasons"
+  const signals = result.reasons.length ? result.reasons : ["no suspicious ticket-selling signals detected"]
+  signals.forEach(reason => {
+    const item = document.createElement("li")
+    item.textContent = reason
+    reasons.appendChild(item)
+  })
+
+  const copyButton = document.createElement("button")
+  copyButton.type = "button"
+  copyButton.className = "result-copy"
+  copyButton.textContent = "Copy result"
+  copyButton.addEventListener("click", async () => {
+    const verdict = result.suspicious ? "Likely spam or scam" : "No high-risk pattern found"
+    const report = `${verdict} (${result.score} risk points). Signals: ${signals.join(", ")}.`
+
+    try {
+      await navigator.clipboard.writeText(report)
+      copyButton.textContent = "Copied"
+    } catch {
+      copyButton.textContent = "Copy unavailable"
+    }
+
+    setTimeout(() => { copyButton.textContent = "Copy result" }, 1800)
+  })
+
+  resultPanel.replaceChildren(summary, meter, details, reasons, copyButton)
 })
+
+updateCount()
+
+const installer = document.querySelector<HTMLFormElement>("#groupme-installer")
+const tokenInput = document.querySelector<HTMLInputElement>("#groupme-token")
+const loadGroupsButton = document.querySelector<HTMLButtonElement>("#load-groups")
+const groupSelect = document.querySelector<HTMLSelectElement>("#group-select")
+const installButton = document.querySelector<HTMLButtonElement>("#install-bot")
+const installStatus = document.querySelector<HTMLElement>("#install-status")
+
+const requestJson = async <T>(path: string, body: object): Promise<T> => {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  })
+  const payload = await response.json() as T & { error?: string }
+  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`)
+  return payload
+}
+
+if (installer && tokenInput && loadGroupsButton && groupSelect && installButton && installStatus) {
+  const setInstallerStatus = (message: string, state = "") => {
+    installStatus.textContent = message
+    installStatus.className = `install-status${state ? ` is-${state}` : ""}`
+  }
+
+  loadGroupsButton.addEventListener("click", async () => {
+    const accessToken = tokenInput.value.trim()
+    if (!accessToken) {
+      setInstallerStatus("Paste your GroupMe access token first.", "error")
+      tokenInput.focus()
+      return
+    }
+
+    loadGroupsButton.disabled = true
+    loadGroupsButton.textContent = "Loading…"
+    setInstallerStatus("Connecting to GroupMe…")
+
+    try {
+      const payload = await requestJson<{ groups: Array<{ id: string; name: string }> }>("/api/groupme/groups", { accessToken })
+      groupSelect.replaceChildren(new Option("Choose a group", ""))
+      payload.groups.forEach(group => groupSelect.add(new Option(group.name, group.id)))
+      groupSelect.disabled = false
+      installButton.disabled = true
+      setInstallerStatus(payload.groups.length ? "Choose the group you want to protect." : "No groups were found for this account.", payload.groups.length ? "ready" : "error")
+    } catch (error) {
+      setInstallerStatus(error instanceof Error ? error.message : "Could not load your groups.", "error")
+    } finally {
+      loadGroupsButton.disabled = false
+      loadGroupsButton.textContent = "Load my groups"
+    }
+  })
+
+  groupSelect.addEventListener("change", () => {
+    installButton.disabled = !groupSelect.value
+  })
+
+  installer.addEventListener("submit", async event => {
+    event.preventDefault()
+    const accessToken = tokenInput.value.trim()
+    const groupId = groupSelect.value
+    if (!accessToken || !groupId) return
+
+    installButton.disabled = true
+    installButton.textContent = "Installing…"
+    setInstallerStatus("Creating MTC Bot in your group…")
+
+    try {
+      const payload = await requestJson<{ group: { name: string } }>("/api/groupme/install", { accessToken, groupId })
+      tokenInput.value = ""
+      groupSelect.disabled = true
+      setInstallerStatus(`MTC Bot is active in ${payload.group.name}. Send a test message to try it.`, "success")
+      installButton.textContent = "Bot installed"
+    } catch (error) {
+      installButton.disabled = false
+      installButton.textContent = "Add MTC Bot"
+      setInstallerStatus(error instanceof Error ? error.message : "Could not install the bot.", "error")
+    }
+  })
+}

@@ -18,21 +18,25 @@
 </head>
 
 
-<body>
+<body id="top">
 
-    <nav>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
 
-        <div class="logo logo-lockup">
+    <nav aria-label="Primary navigation">
+
+        <a href="#top" class="logo logo-lockup" aria-label="MTC Bot home">
             <span class="pixel-shield" aria-hidden="true"></span>
             MTC Bot
-        </div>
+        </a>
 
-        <a href="#try-it" class="nav-button">
-            Try the detector
+        <a href="#install" class="nav-button">
+            Add to GroupMe
         </a>
 
     </nav>
 
+
+    <main id="main-content">
 
     <section class="hero">
 
@@ -43,23 +47,29 @@
 
         <div class="hero-content">
 
+            <p class="student-made">
+                <span class="student-made__icon" aria-hidden="true">
+                    <img src="/assets/uga-logo.png" alt="" width="1920" height="1080">
+                </span>
+                <span>Made by UGA students for UGA students.</span>
+            </p>
+
             <h1>
                 Keep scammers out of
                 <span>your GroupMe.</span>
             </h1>
 
             <p class="description">
-                MTC Bot automatically detects and removes spam
-                and scam messages from your GroupMe, keeping
-                your members protected without creating more
-                work for admins.
+                MTC Bot watches for risky messages and warns your
+                GroupMe in real time, giving members and admins the
+                context they need to act safely.
             </p>
 
 
             <div class="buttons">
 
-                <a href="#try-it" class="button primary">
-                    Check a message
+                <a href="#install" class="button primary">
+                    Add to GroupMe
                 </a>
 
                 <a href="#how-it-works" class="button secondary">
@@ -79,6 +89,33 @@
         </div>
 
     </section>
+<section id="install" class="install-section">
+    <div class="install-copy section-header">
+        <p class="section-label">INSTALL THE REAL BOT</p>
+        <h2>Add MTC Bot to your GroupMe.</h2>
+        <p>Connect your GroupMe account, choose a group you manage, and MTC Bot will begin checking new messages.</p>
+        <ol class="install-steps">
+            <li><span>01</span> Get your GroupMe access token.</li>
+            <li><span>02</span> Load and choose your group.</li>
+            <li><span>03</span> Install the bot with one click.</li>
+        </ol>
+        <p class="api-limit"><strong>Heads up:</strong> GroupMe's public API lets the bot post warnings, but not delete another member's message. Admins still control removal.</p>
+    </div>
+
+    <form id="groupme-installer" class="install-card" novalidate>
+        <label for="groupme-token">GroupMe access token</label>
+        <input id="groupme-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your token" required>
+        <p class="field-help">Create or copy your token at <a href="https://dev.groupme.com/" target="_blank" rel="noreferrer">dev.groupme.com ↗</a>. It is used only to connect the bot and is never saved in your browser.</p>
+        <button id="load-groups" type="button" class="button secondary">Load my groups</button>
+
+        <label for="group-select">Group to protect</label>
+        <select id="group-select" disabled required>
+            <option value="">Load your groups first</option>
+        </select>
+        <button id="install-bot" type="submit" class="button primary" disabled>Add MTC Bot</button>
+        <div id="install-status" class="install-status" role="status" aria-live="polite">Ready when you are.</div>
+    </form>
+</section>
 <section id="how-it-works" class="how-it-works">
 
     <div class="section-header">
@@ -87,8 +124,8 @@
         <h2>Protection without constant moderation.</h2>
 
         <p class="section-description">
-            Add MTC Bot to your GroupMe and let it handle
-            unwanted spam automatically.
+            Add MTC Bot to your GroupMe and let it flag
+            suspicious messages automatically.
         </p>
     </div>
 
@@ -122,11 +159,11 @@
         <div class="step">
             <div class="step-number">03</div>
 
-            <h3>Spam gets removed</h3>
+            <h3>Your group gets warned</h3>
 
             <p>
-                When a spam or scam message is detected,
-                MTC Bot automatically removes it from the chat.
+                When a risky message is detected, MTC Bot posts
+                a warning so members can verify before they act.
             </p>
         </div>
 
@@ -141,11 +178,23 @@
         <p>Paste a possible ticket scam below. The demo scores common warning signs locally in your browser.</p>
     </div>
 
-    <form id="message-checker" class="checker-card">
+    <form id="message-checker" class="checker-card" novalidate>
         <label for="message-input">Message to analyze</label>
-        <textarea id="message-input" rows="6" placeholder="Selling 2 Bama and 2 Oklahoma tickets, DM me if you're interested."></textarea>
-        <button type="submit" class="button primary">Analyze message</button>
-        <div id="analysis-result" class="analysis-result is-empty" aria-live="polite">
+        <textarea id="message-input" rows="6" maxlength="500" aria-describedby="checker-help message-count" placeholder="Selling 2 Bama and 2 Oklahoma tickets, DM me if you're interested."></textarea>
+        <div class="checker-meta">
+            <span id="checker-help">Runs locally—your message never leaves this browser.</span>
+            <span id="message-count">0 / 500</span>
+        </div>
+        <div class="example-actions" aria-label="Example messages">
+            <span>Load example:</span>
+            <button type="button" class="example-button" data-example="scam">Likely scam</button>
+            <button type="button" class="example-button" data-example="safe">Safe message</button>
+        </div>
+        <div class="checker-actions">
+            <button type="submit" class="button primary">Analyze message</button>
+            <button type="reset" class="button secondary">Clear</button>
+        </div>
+        <div id="analysis-result" class="analysis-result is-empty" role="status" aria-live="polite">
             Your result will appear here.
         </div>
     </form>
@@ -157,10 +206,10 @@
 
     <div class="demo-header">
         <p class="section-label">SEE IT IN ACTION</p>
-        <h2>Spam gone before it becomes a problem.</h2>
+        <h2>Risk flagged before it becomes a problem.</h2>
         <p>
             When MTC Bot detects a spam or scam message,
-            it removes the message from the group.
+            it immediately warns the group.
         </p>
     </div>
 
@@ -209,8 +258,8 @@
                 <div class="shield">✓</div>
 
                 <div>
-                    <strong>MTC Bot removed a spam message</strong>
-                    <p>The message was automatically deleted.</p>
+                    <strong>MTC Bot flagged a suspicious message</strong>
+                    <p>The group was warned automatically.</p>
                 </div>
             </div>
 
@@ -231,13 +280,16 @@
             MTC Bot handles the noise so your people can focus on showing up,
             sharing moments, and building something meaningful together.
         </p>
-        <a href="#try-it" class="button primary">Protect your community</a>
+        <a href="#install" class="button primary">Protect your community</a>
     </div>
 </section>
+
+    </main>
 
 <footer>
     <span class="logo logo-lockup"><span class="pixel-shield" aria-hidden="true"></span>MTC Bot</span>
     <p>Simple protection for healthier group chats.</p>
+    <a class="source-link" href="https://github.com/onbaby/mtcbot" target="_blank" rel="noreferrer">View source ↗</a>
 </footer>
 
 <script type="module" src="/app.js"></script>

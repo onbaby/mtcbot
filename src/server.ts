@@ -2,6 +2,17 @@ import { createReadStream } from "node:fs"
 import { stat } from "node:fs/promises"
 import { createServer } from "node:http"
 import { extname, normalize, resolve, sep } from "node:path"
+import { loadEnvFile } from "node:process"
+
+import callbackHandler from "../api/groupme/callback.js"
+import groupsHandler from "../api/groupme/groups.js"
+import installHandler from "../api/groupme/install.js"
+
+try {
+  loadEnvFile()
+} catch {
+  // Environment variables may be supplied by the host instead of a local .env file.
+}
 
 const root = process.cwd()
 const port = Number.parseInt(process.env.PORT ?? "3000", 10)
@@ -16,6 +27,17 @@ const contentTypes: Record<string, string> = {
 
 const server = createServer(async (request, response) => {
   const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname)
+
+  const apiHandler = {
+    "/api/groupme/callback": callbackHandler,
+    "/api/groupme/groups": groupsHandler,
+    "/api/groupme/install": installHandler
+  }[pathname]
+  if (apiHandler) {
+    await apiHandler(request, response)
+    return
+  }
+
   const requestedPath = pathname === "/" ? "index.html" : pathname.slice(1)
   const builtAsset = requestedPath === "app.js" || requestedPath === "app.css"
     ? `dist/${requestedPath}`

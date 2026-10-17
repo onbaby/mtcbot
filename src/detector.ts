@@ -44,6 +44,27 @@ export function analyzeMessage(message: string): AnalysisResult {
     reasons.push("contains phone number")
   }
 
+  const moneyPromisePattern = /\b(earn|make|win|get paid)\b.{0,35}\$\s?\d+/i
+  const aggressiveCallToActionPattern = /\b(click (this|the) link|claim (your|a)|act now|limited time|guaranteed payment)\b/i
+
+  if (moneyPromisePattern.test(text)) {
+    score += 3
+    reasons.push("promises fast or easy money")
+  }
+
+  if (aggressiveCallToActionPattern.test(text)) {
+    score += 2
+    reasons.push("uses a high-pressure link or claim prompt")
+  }
+
+  if (
+    (moneyPromisePattern.test(text) || aggressiveCallToActionPattern.test(text)) &&
+    /\b(today|right now|immediately|urgent)\b/i.test(text)
+  ) {
+    score += 1
+    reasons.push("adds urgency to the offer")
+  }
+
   const opponents = [
     "auburn",
     "missouri",

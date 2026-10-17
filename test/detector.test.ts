@@ -16,6 +16,11 @@ describe("analyzeMessage", () => {
       expected: true
     },
     {
+      name: "flags a high-pressure easy-money message",
+      text: "Earn $500 today! Click this link to claim your payment now!",
+      expected: true
+    },
+    {
       name: "allows a single ticket listing",
       text: "Selling one Georgia ticket. DM me if interested.",
       expected: false
@@ -33,6 +38,11 @@ describe("analyzeMessage", () => {
     {
       name: "allows an event announcement with contact information",
       text: "Movie screening of Harar: The Forgotten Islamic City. Nov 2nd / 2-5PM. Tickets $10. Get your tickets online with Eventbrite at https://tinyurl.com/4faw4zpv. For more information contact Br Wahib at (678) 499-4469. Zelle info available upon request.",
+      expected: false
+    },
+    {
+      name: "allows a normal scholarship announcement",
+      text: "The scholarship application closes today. Visit the student center website for details.",
       expected: false
     }
   ]
