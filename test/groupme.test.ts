@@ -4,6 +4,7 @@ import test from "node:test"
 import {
   analyzeCallback,
   createBot,
+  deleteGroupMessage,
   formatWarning,
   listGroups,
   openInstallation,
@@ -41,6 +42,9 @@ test("GroupMe helpers send the expected API requests", async () => {
     if (url.includes("/groups?")) {
       return new Response(JSON.stringify({ response: [{ id: "1", name: "MSA" }] }), { status: 200 })
     }
+    if (url.includes("/conversations/") && init?.method === "DELETE") {
+      return new Response(null, { status: 204 })
+    }
     if (url.endsWith("/bots") && init?.method === "POST") {
       return new Response(JSON.stringify({ response: { bot: { bot_id: "b1", group_id: "1", name: "MTC Bot" } } }), { status: 201 })
     }
@@ -49,9 +53,17 @@ test("GroupMe helpers send the expected API requests", async () => {
 
   assert.deepEqual(await listGroups("token", fetcher), [{ id: "1", name: "MSA" }])
   assert.equal((await createBot("token", "1", "https://example.com/callback", fetcher)).bot_id, "b1")
+  assert.deepEqual(await deleteGroupMessage("token", "1", "m1", fetcher), { deleted: true, status: 204 })
   await postBotMessage("b1", "warning", fetcher)
 
   assert.equal(new Headers(requests[0]?.init?.headers).get("X-Access-Token"), "token")
   assert.match(String(requests[1]?.init?.body), /callback_url/)
-  assert.match(String(requests[2]?.init?.body), /warning/)
+  assert.equal(requests[2]?.init?.method, "DELETE")
+  assert.equal(new Headers(requests[2]?.init?.headers).get("X-Access-Token"), "token")
+  assert.match(String(requests[3]?.init?.body), /warning/)
+})
+
+test("message deletion fails closed so the callback can warn instead", async () => {
+  const fetcher: typeof fetch = async () => new Response(null, { status: 403 })
+  assert.deepEqual(await deleteGroupMessage("token", "1", "m1", fetcher), { deleted: false, status: 403 })
 })

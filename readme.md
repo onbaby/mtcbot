@@ -10,12 +10,14 @@ A working GroupMe warning bot and interactive scam detector.
 - Clear/reset, live character count, detailed reasons, and copyable results
 - Responsive, keyboard-accessible interface with reduced-motion support
 - Real GroupMe installation flow: enter a developer token, choose a group, and create the bot
-- Live GroupMe callback that checks incoming messages and posts a warning for suspicious content
+- Live GroupMe callback that checks incoming messages, attempts deletion, and posts a result
 - Encrypted, tamper-resistant installation tokens; no browser storage or database required
 
-GroupMe's public bot API can receive messages and post warnings, but does not
-provide an endpoint for deleting another member's message. MTC Bot therefore
-alerts the group immediately and leaves message removal to a group admin.
+GroupMe's documented public bot API can receive messages and post warnings. MTC
+Bot also attempts the undocumented `DELETE /conversations/:group/messages/:message`
+route used by older moderation bots. When that route is unavailable or the
+installer lacks permission, MTC Bot posts a warning and leaves removal to an
+admin. Treat deletion as experimental rather than guaranteed behavior.
 
 ## Run locally
 
@@ -50,8 +52,9 @@ that bot's callback URL using the server-side secret.
 2. After a group is chosen, the server creates an official GroupMe bot whose
    callback points back to `/api/groupme/callback`.
 3. GroupMe sends new group messages to the callback. MTC Bot ignores bot/system
-   messages, runs the detector, and posts a warning when the score reaches the
-   suspicious threshold.
+   messages, runs the detector, and attempts to delete messages that reach the
+   suspicious threshold. It reports a removal when successful and falls back to
+   a warning when deletion is rejected.
 
 If `INSTALLATION_SECRET` changes, existing callback tokens can no longer be
 opened and those bots must be reinstalled.

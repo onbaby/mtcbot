@@ -1,4 +1,13 @@
-import { analyzeCallback, formatWarning, listBots, openInstallation, postBotMessage, type GroupMeCallback } from "../../src/groupme.js"
+import {
+  analyzeCallback,
+  deleteGroupMessage,
+  formatRemoval,
+  formatWarning,
+  listBots,
+  openInstallation,
+  postBotMessage,
+  type GroupMeCallback
+} from "../../src/groupme.js"
 import { json, readJson, requirePost, type ApiRequest, type ApiResponse } from "../_lib/http.js"
 
 const recentlyProcessed = new Map<string, number>()
@@ -32,13 +41,25 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     const result = analyzeCallback(message)
     if (!result?.suspicious) return json(response, 202, { ok: true, flagged: false })
 
+    const deletion = message.id
+      ? await deleteGroupMessage(installation.accessToken, installation.groupId, message.id)
+      : { deleted: false, status: 0 }
+
     const bots = await listBots(installation.accessToken)
     const bot = bots.find(candidate => candidate.group_id === installation.groupId && candidate.callback_url?.includes(installationToken))
       ?? bots.find(candidate => candidate.group_id === installation.groupId && candidate.name === "MTC Bot")
     if (!bot) throw new Error("MTC Bot installation could not be found")
 
-    await postBotMessage(bot.bot_id, formatWarning(message, result))
-    json(response, 202, { ok: true, flagged: true })
+    const botMessage = deletion.deleted
+      ? formatRemoval(message, result)
+      : formatWarning(message, result)
+    await postBotMessage(bot.bot_id, botMessage)
+    json(response, 202, {
+      ok: true,
+      flagged: true,
+      deleted: deletion.deleted,
+      deletionStatus: deletion.status
+    })
   } catch (error) {
     json(response, 400, { error: error instanceof Error ? error.message : "Callback failed" })
   }

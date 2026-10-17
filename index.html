@@ -99,7 +99,7 @@
             <li><span>02</span> Load and choose your group.</li>
             <li><span>03</span> Install the bot with one click.</li>
         </ol>
-        <p class="api-limit"><strong>Heads up:</strong> GroupMe's public API lets the bot post warnings, but not delete another member's message. Admins still control removal.</p>
+        <p class="api-limit"><strong>Experimental removal:</strong> MTC Bot attempts GroupMe's undocumented deletion route when permissions allow. If GroupMe rejects it, the bot posts a warning so an admin can remove the message.</p>
     </div>
 
     <form id="groupme-installer" class="install-card" novalidate>
@@ -159,11 +159,11 @@
         <div class="step">
             <div class="step-number">03</div>
 
-            <h3>Your group gets warned</h3>
+            <h3>Remove or warn</h3>
 
             <p>
-                When a risky message is detected, MTC Bot posts
-                a warning so members can verify before they act.
+                MTC Bot attempts to remove it. If GroupMe denies
+                deletion, it warns members so they can act safely.
             </p>
         </div>
 
@@ -206,10 +206,10 @@
 
     <div class="demo-header">
         <p class="section-label">SEE IT IN ACTION</p>
-        <h2>Risk flagged before it becomes a problem.</h2>
+        <h2>Spam handled before it becomes a problem.</h2>
         <p>
-            When MTC Bot detects a spam or scam message,
-            it immediately warns the group.
+            MTC Bot attempts removal first and falls back to
+            an immediate warning when GroupMe denies it.
         </p>
     </div>
 
@@ -258,8 +258,8 @@
                 <div class="shield">✓</div>
 
                 <div>
-                    <strong>MTC Bot flagged a suspicious message</strong>
-                    <p>The group was warned automatically.</p>
+                    <strong>MTC Bot removed a suspicious message</strong>
+                    <p>The group was notified automatically.</p>
                 </div>
             </div>
 

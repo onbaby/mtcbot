@@ -113,6 +113,31 @@ export const postBotMessage = async (botId: string, text: string, fetcher: Fetch
   )
 }
 
+export interface DeleteMessageResult {
+  deleted: boolean
+  status: number
+}
+
+export const deleteGroupMessage = async (
+  accessToken: string,
+  groupId: string,
+  messageId: string,
+  fetcher: Fetcher = fetch
+): Promise<DeleteMessageResult> => {
+  const response = await fetcher(
+    `${GROUPME_API}/conversations/${encodeURIComponent(groupId)}/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+        "X-Access-Token": accessToken
+      }
+    }
+  )
+
+  return { deleted: response.ok, status: response.status }
+}
+
 const encryptionKey = (secret: string): Buffer => createHash("sha256").update(secret).digest()
 
 export const sealInstallation = (payload: InstallationPayload, secret: string): string => {
@@ -145,4 +170,9 @@ export const formatWarning = (message: GroupMeCallback, result: AnalysisResult):
   const sender = message.name?.trim() || "A recent sender"
   const signals = result.reasons.slice(0, 3).join(", ")
   return `MTC Bot alert: ${sender}'s message matched ${result.score} risk points. Verify the sender before responding or paying.${signals ? ` Signals: ${signals}.` : ""}`
+}
+
+export const formatRemoval = (message: GroupMeCallback, result: AnalysisResult): string => {
+  const sender = message.name?.trim() || "A recent sender"
+  return `MTC Bot removed a suspicious message from ${sender} after it matched ${result.score} risk points.`
 }
